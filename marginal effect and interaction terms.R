@@ -154,9 +154,6 @@ plot_interaction3 <- ggplot(pred_interaction3, aes(x = x, y = predicted, color =
        color = "Minority Presence Level") +
   theme_minimal()
 
-# ----------------------------------
-# Display Plots
-# ----------------------------------
 print(plot_social_contact)
 print(plot_net_migration)
 print(plot_interaction1)
@@ -196,7 +193,7 @@ grid_data$lwr <- pred_seg$fit - 1.96 * pred_seg$se.fit
 
 bp_value <- seg_mod_combined$psi[2]  # Extract breakpoint estimate
 
-# Create Segmented Regression Plot
+# Segmented Regression Plot
 plot_segmented <- ggplot(grid_data, aes(x = social_contact_dm, y = fit)) +
   geom_line(color = "red", size = 1) +
   geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "red", alpha = 0.2) +
@@ -252,6 +249,8 @@ model_social_econ <- lm(
     age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
+
+# Social Contact x Political Ideology
 model_social_ideo <- lm(
   imwbcnt ~ ns(social_contact_dm, df = 2) * ns(lrscale_dm, df = 3) +
     age + gndr + factor(year) + factor(nuts2) + factor(country),
@@ -282,23 +281,23 @@ x_limits <- c(-1, 0.5)
 y_limits <- c(min(pred_minority$conf.low, na.rm = TRUE) - 0.1, max(pred_minority$conf.high, na.rm = TRUE) + 0.1)
 
 model_social_econ <- lm(
-  imwbcnt ~ ns(social_contact_dm, df = 3) * ns(economic_threat_index_dm, df = 3) +
-    age + gndr + factor(year) + factor(nuts2),
+  imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 3) +
+    age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
 model_social_ideo <- lm(
-  imwbcnt ~ ns(social_contact_dm,df=3) * ns(lrscale_dm,df=3) +
-    age + gndr + factor(year) + factor(nuts2),
+  imwbcnt ~ ns(social_contact_dm,df = 2) * ns(lrscale_dm,df = 2) +
+    age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
 model_social_minority <- lm(
-  imwbcnt ~ ns(social_contact_dm, df = 3) * ns(minority_presence_dm, df = 3) +
-    age + gndr + factor(year) + factor(nuts2),
+  imwbcnt ~ ns(social_contact_dm, df = 2) * ns(minority_presence_dm, df = 2) +
+    age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
 model_social_pop_den <- lm(
-  imwbcnt ~ ns(social_contact_dm, df = 3) * ns(pop_density_c_dm, df = 3) +
-    age + gndr + factor(year) + factor(nuts2),
+  imwbcnt ~ ns(social_contact_dm, df = 2) * ns(pop_density_c_dm, df = 3) +
+    age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
 # Function to plot interaction effects
@@ -383,14 +382,14 @@ plot_interaction_effect <- function(model, term1, term2, title, xlabel) {
 }
 # Fit models for interaction effects
 model_social_reg_mig <- lm(
-  imwbcnt ~ ns(social_contact_dm, df = 3) * ns(net_mig_dm, df = 3) +
-    age + gndr + factor(year), #+ factor(nuts2),
+  imwbcnt ~ ns(social_contact_dm, df = 2) * ns(net_mig_dm, df = 3) +
+    age + gndr + factor(year), #+ factor(nuts2) + factor(country),
   data = df
 )
 
 model_social_nat_mig <- lm(
-  imwbcnt ~ ns(social_contact_dm, df = 3) * ns(net_mig_c_dm, df = 3) +
-    age + gndr + factor(year),# + factor(nuts2),
+  imwbcnt ~ ns(social_contact_dm, df = 2) * ns(net_mig_c_dm, df = 3) +
+    age + gndr + factor(year),# + factor(nuts2) + factor(country),
   data = df
 )
 
@@ -408,12 +407,12 @@ grid.arrange(plot_social_reg_mig, plot_social_nat_mig, ncol = 2)
 
 
 model_social_pop_den <- lm(
-  imwbcnt ~ ns(social_contact_dm, df = 3) * ns(pop_density_dm, df = 3) +
+  imwbcnt ~ ns(social_contact_dm, df = 2) * ns(pop_density_dm, df = 3) +
     age + gndr + factor(year),# + factor(nuts2),
   data = df
 )
 model_social_pop_den_c <- lm(
-  imwbcnt ~ ns(social_contact_dm, df = 3) * ns(pop_density_c_dm, df = 3) +
+  imwbcnt ~ ns(social_contact_dm, df = 2) * ns(pop_density_c_dm, df = 3) +
     age + gndr + factor(year),# + factor(nuts2),
   data = df
 )
@@ -430,19 +429,21 @@ grid.arrange(plot_social_pop_den, plot_social_pop_den_c, ncol = 2)
 
 
 
+model_df1 <- lm(imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 1) +
+                  age + gndr + factor(year) + factor(nuts2) + factor(country), data = df)
 
 model_df2 <- lm(imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 2) +
-                  age + gndr + factor(year) + factor(nuts2), data = df)
+                  age + gndr + factor(year) + factor(nuts2) + factor(country), data = df)
 
-model_df3 <- lm(imwbcnt ~ ns(social_contact_dm, df = 3) * ns(economic_threat_index_dm, df = 3) +
-                  age + gndr + factor(year) + factor(nuts2), data = df)
+model_df3 <- lm(imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 3) +
+                  age + gndr + factor(year) + factor(nuts2) + factor(country), data = df)
 
-model_df4 <- lm(imwbcnt ~ ns(social_contact_dm, df = 4) * ns(economic_threat_index_dm, df = 4) +
-                  age + gndr + factor(year) + factor(nuts2), data = df)
+model_df4 <- lm(imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 4) +
+                  age + gndr + factor(year) + factor(nuts2) + factor(country), data = df)
 
 # Compare AIC and BIC values
-AIC(model_df2, model_df3, model_df4)
-BIC(model_df2, model_df3, model_df4)
+AIC(model_df1, model_df2, model_df3, model_df4)
+BIC(model_df1, model_df2, model_df3, model_df4)
 
 
 model_df02 <- lm(imwbcnt ~ ns(social_contact_dm, df = 2) * ns(lrscale_dm, df = 2) +
