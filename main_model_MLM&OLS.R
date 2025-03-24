@@ -10,7 +10,7 @@ library(lmtest)
 library(htmltools)
 library(broom)
 
-# set your repository.
+# set your working directory and load your data.
 #setwd("/Users/aunal/Desktop/Uni/Study/ss 2024/master thesis/data")
 
 #df <- read_csv("ESS_EUROSTAT_final_standardized.csv") %>%
