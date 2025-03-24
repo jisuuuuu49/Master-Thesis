@@ -89,7 +89,7 @@ model_spline <- lm(
     ns(net_mig_dm, df = 3) + gdppc_dm + pop_density_dm + unemployment_dm + minority_presence_dm +
     lrscale_dm + education_numeric + household_income_dm + unemployment_c_dm + gdppc_c_dm +
     age + gndr + factor(year) + factor(nuts2) + factor(country),
-  data = df
+  data = df, na.action = na.exclude
 )
 
 
@@ -97,7 +97,7 @@ model_spline <- lm(
 # Generate Marginal Effect Plots
 # ----------------------------------
 
-# 5.1: Marginal Effect of Social Contact on Outgroup Hostility (with splines)
+# Marginal Effect of Social Contact on Outgroup Hostility (with splines)
 pred_social_contact <- ggpredict(model_spline, terms = "social_contact_dm [all]")
 plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
   geom_line(color = "blue", size = 1.2) +
@@ -107,7 +107,7 @@ plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
        y = "Predicted Outgroup Hostility") +
   theme_minimal()
 
-# 5.2: Marginal Effect of Net Migration on Outgroup Hostility (with splines)
+# Marginal Effect of Net Migration on Outgroup Hostility (with splines)
 #pred_net_migration <- ggpredict(model_spline, terms = "net_mig_dm [all]")
 #plot_net_migration <- ggplot(pred_net_migration, aes(x = x, y = predicted)) +
 #  geom_line(color = "red", size = 1.2) +
@@ -121,7 +121,7 @@ plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
 # Interaction Effects (Splines Applied)
 # ----------------------------------
 
-# 6.1: Interaction: Social Contact x Economic Threat
+# Interaction: Social Contact x Economic Threat
 pred_interaction1 <- ggpredict(model_spline, terms = c("social_contact_dm", "economic_threat_index_dm [0.2, 0.5, 0.8]"))
 plot_interaction1 <- ggplot(pred_interaction1, aes(x = x, y = predicted, color = group)) +
   geom_line(size = 1.2) +
@@ -132,7 +132,7 @@ plot_interaction1 <- ggplot(pred_interaction1, aes(x = x, y = predicted, color =
        color = "Economic Threat Level") +
   theme_minimal()
 
-# 6.2: Interaction: Social Contact x Political Ideology
+# Interaction: Social Contact x Political Ideology
 pred_interaction2 <- ggpredict(model_spline, terms = c("social_contact_dm", "lrscale_dm [0.2, 0.5, 0.8]"))
 plot_interaction2 <- ggplot(pred_interaction2, aes(x = x, y = predicted, color = group)) +
   geom_line(size = 1.2) +
@@ -143,7 +143,7 @@ plot_interaction2 <- ggplot(pred_interaction2, aes(x = x, y = predicted, color =
        color = "Political Ideology Level") +
   theme_minimal()
 
-# 6.3: Interaction: Social Contact x Minority Presence
+# Interaction: Social Contact x Minority Presence
 pred_interaction3 <- ggpredict(model_spline, terms = c("social_contact_dm", "minority_presence_dm [0.2, 0.5, 0.8]"))
 plot_interaction3 <- ggplot(pred_interaction3, aes(x = x, y = predicted, color = group)) +
   geom_line(size = 1.2) +
@@ -163,13 +163,9 @@ print(plot_interaction1)
 print(plot_interaction2)
 print(plot_interaction3)
 
-base_linear_no_interaction <- lm(
-  imwbcnt ~ social_contact_dm + economic_threat_index_dm + lrscale_dm + age + gndr,
-  data = df,
-  na.action = na.exclude
-)
+
 seg_mod_combined <- segmented(
-  base_linear_no_interaction,
+  model_spline,
   seg.Z = ~ social_contact_dm,
   psi = 0.3  # or quantile(df$social_contact_dm, 0.5)
 )
@@ -212,13 +208,12 @@ plot_segmented <- ggplot(grid_data, aes(x = social_contact_dm, y = fit)) +
     y = "Predicted Outgroup Hostility"
   ) +
   theme_minimal(base_size = 14) +
-  theme(plot.title = element_text(size = 12),  # Adjust title size
-        plot.subtitle = element_text(size = 10))  # Adjust subtitle size
+  theme(plot.title = element_text(size = 12), 
+        plot.subtitle = element_text(size = 10)) 
 
 # ----------------------------------
 # Marginal Effect of Social Contact (Splined Model)
 # ----------------------------------
-# Generate Marginal Effect of Social Contact
 pred_social_contact <- ggpredict(model_spline, terms = "social_contact_dm [all]")
 plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
   geom_line(color = "blue", size = 1.2) +
@@ -227,22 +222,21 @@ plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
        x = "Social Contact",
        y = "Predicted Outgroup Hostility") +
   theme_minimal() +
-  theme(plot.title = element_text(size = 12))  # Adjust title size
+  theme(plot.title = element_text(size = 12))  
 
 grid.arrange(plot_segmented, plot_social_contact, nrow = 1)
 
-# Function to generate clean black & white plots with small titles
 plot_marginal_effect <- function(model, term, title) {
   pred <- ggpredict(model, terms = paste0(term, " [all]"))
   
   ggplot(pred, aes(x = x, y = predicted)) +
     geom_line(color = "black", size = 1.2) +  # Black line
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "black") +  # Black confidence interval
+    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "black") + 
     labs(title = title,
          x = term,
          y = "Predicted Outgroup Hostility") +
     theme_minimal() +
-    theme(plot.title = element_text(size = 10))  # Reduce title size
+    theme(plot.title = element_text(size = 10))  
 }
 
 plot_net_migration <- plot_marginal_effect(model_net_mig, "net_mig", "Marginal Effect of Net Migration on Outgroup Hostility")
@@ -252,15 +246,15 @@ plot_pop_density <- plot_marginal_effect(model_pop_density, "pop_density", "Marg
 
 grid.arrange(plot_net_migration, plot_gdppc, plot_unemployment, plot_pop_density, nrow = 2)
 
-# 2.1: Social Contact × Economic Threat
+# Social Contact × Economic Threat
 model_social_econ <- lm(
   imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 3) +
-    age + gndr + factor(year) + factor(nuts2),
+    age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
 model_social_ideo <- lm(
   imwbcnt ~ ns(social_contact_dm, df = 2) * ns(lrscale_dm, df = 3) +
-    age + gndr + factor(year) + factor(nuts2),
+    age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
 
@@ -520,9 +514,6 @@ grid.arrange(plot_list[[2]], plot_list[[3]], plot_list[[4]], ncol = 3)
 
 
 
-
-
-
 df_values <- c(2, 3, 4)
 plot_list <- list()
 
@@ -544,11 +535,6 @@ for (df_value in df_values) {
 grid.arrange(plot_list[[2]], plot_list[[3]], plot_list[[4]], ncol = 3)
 
 
-library(boot)
-
-
-library(ggplot2)
-
 df_values <- c(2, 3, 4, 5)
 plot_list <- list()
 
@@ -565,126 +551,8 @@ for (df_value in df_values) {
   plot_list[[df_value]] <- p
 }
 
-library(gridExtra)
 grid.arrange(plot_list[[2]], plot_list[[3]], plot_list[[4]], plot_list[[5]], ncol = 2)
 
 
 
 
-
-
-# model_spline <- lm(
-#   imwbcnt ~ ns(social_contact_dm, df = 3) * ns(economic_threat_index_dm, df = 3) +
-#     ns(net_mig_dm, df = 3) + age + gndr + factor(year) + factor(nuts2),
-#   data = df
-# )
-# # 5.1: Marginal Effect of Social Contact on Outgroup Hostility (with splines)
-# pred_social_contact <- ggpredict(model_spline, terms = "social_contact_dm [all]")
-# plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
-#   geom_line(color = "blue", size = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "blue") +
-#   labs(title = "Marginal Effect of Social Contact on Outgroup Hostility",
-#        x = "Social Contact (demeaned)",
-#        y = "Predicted Outgroup Hostility") +
-#   theme_minimal()
-# 
-# # 5.2: Marginal Effect of Net Migration on Outgroup Hostility (with splines)
-# pred_net_migration <- ggpredict(model_spline, terms = "net_mig_dm [all]")
-# plot_net_migration <- ggplot(pred_net_migration, aes(x = x, y = predicted)) +
-#   geom_line(color = "red", size = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "red") +
-#   labs(title = "Marginal Effect of Net Migration on Outgroup Hostility",
-#        x = "Net Migration (demeaned)",
-#        y = "Predicted Outgroup Hostility") +
-#   theme_minimal()
-# 
-# # ----------------------------------
-# # 6) Interaction Effects (Splines Applied)
-# # ----------------------------------
-# 
-# # 6.1: Interaction: Social Contact x Economic Threat
-# pred_interaction1 <- ggpredict(model_spline, terms = c("social_contact_dm", "economic_threat_index_dm [0.2, 0.5, 0.8]"))
-# plot_interaction1 <- ggplot(pred_interaction1, aes(x = x, y = predicted, color = group)) +
-#   geom_line(size = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
-#   labs(title = "Interaction: Social Contact x Economic Threat",
-#        x = "Social Contact (demeaned)",
-#        y = "Predicted Outgroup Hostility",
-#        color = "Economic Threat Level") +
-#   theme_minimal()
-# 
-# # 6.2: Interaction: Net Migration x Social Contact
-# pred_interaction2 <- ggpredict(model_spline, terms = c("net_mig_dm", "social_contact_dm [low, medium, high]"))
-# plot_interaction2 <- ggplot(pred_interaction2, aes(x = x, y = predicted, color = group)) +
-#   geom_line(size = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
-#   labs(title = "Interaction: Net Migration x Social Contact",
-#        x = "Net Migration (demeaned)",
-#        y = "Predicted Outgroup Hostility",
-#        color = "Social Contact Level") +
-#   theme_minimal()
-# 
-# # ----------------------------------
-# # 7) Display Plots Separately
-# # ----------------------------------
-# print(plot_social_contact)
-# print(plot_net_migration)
-# print(plot_interaction1)
-# print(plot_interaction2)
-# 
-
-
-
-
-
-
-
-# # ---------------------------
-# # 5) Fit Linear Model for Marginal Effects
-# # ---------------------------
-# model_fe <- lm(
-#   imwbcnt ~ ns(social_contact_dm, df = 3) * ns(economic_threat_index_dm, df = 3) + 
-#     lrscale_dm + minority_presence_dm + gdppc_dm + pop_density_dm + 
-#     unemployment_dm + net_mig_dm + age + gndr + factor(year) + factor(nuts2),
-#   data = df
-# )
-# 
-# # ----------------------------------
-# # 6) Generate Marginal Effect Predictions
-# # ----------------------------------
-# pred_social_contact <- ggpredict(model_fe, terms = c("social_contact_dm"))
-# pred_net_migration <- ggpredict(model_fe, terms = c("net_mig_dm"))
-# pred_interaction <- ggpredict(model_fe, terms = c("social_contact_dm", "economic_threat_index_dm [0.2, 0.5, 0.8]"))
-# 
-# # ---------------------------
-# # 7) Plot Marginal Effects
-# # ---------------------------
-# plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
-#   geom_line(color = "blue", size = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "blue") +
-#   labs(title = "Marginal Effect of Social Contact on Outgroup Hostility",
-#        x = "Social Contact (demeaned)",
-#        y = "Predicted Outgroup Hostility") +
-#   theme_minimal()
-# 
-# plot_net_migration <- ggplot(pred_net_migration, aes(x = x, y = predicted)) +
-#   geom_line(color = "red", size = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, fill = "red") +
-#   labs(title = "Marginal Effect of Net Migration on Outgroup Hostility",
-#        x = "Net Migration (demeaned)",
-#        y = "Predicted Outgroup Hostility") +
-#   theme_minimal()
-# 
-# plot_interaction <- ggplot(pred_interaction, aes(x = x, y = predicted, color = group)) +
-#   geom_line(size = 1.2) +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
-#   labs(title = "Interaction: Social Contact x Economic Threat",
-#        x = "Social Contact (demeaned)",
-#        y = "Predicted Outgroup Hostility",
-#        color = "Economic Threat Level") +
-#   theme_minimal()
-# 
-# # ---------------------------
-# # 8) Arrange Plots Together
-# # ---------------------------
-# grid.arrange(plot_social_contact, plot_net_migration, plot_interaction, nrow = 2)
