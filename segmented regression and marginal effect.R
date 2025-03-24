@@ -64,14 +64,15 @@ df <- df %>%
     net_mig_m = mean(net_mig, na.rm = TRUE)
   ) %>%
   ungroup() %>%
+
   group_by(country) %>%
   mutate(
-    unemployment_c_dm = unemployment - mean(unemployment, na.rm = TRUE),
-    unemployment_c_m = mean(unemployment, na.rm = TRUE),
-    gdppc_c_dm = gdppc - mean(gdppc, na.rm = TRUE),
-    gdppc_c_m = mean(gdppc, na.rm = TRUE),
-    net_mig_c_dm = minority_presence - mean(net_mig, na.rm = TRUE),
-    net_mig_c_m = mean(net_mig, na.rm = TRUE)
+    unemployment_c_dm = unemployment_c - mean(unemployment_c, na.rm = TRUE),
+    unemployment_c_m = mean(unemployment_c, na.rm = TRUE),
+    gdppc_c_dm = gdppc_c - mean(gdppc_c, na.rm = TRUE),
+    gdppc_c_m = mean(gdppc_c, na.rm = TRUE),
+    net_mig_c_dm = net_mig_c - mean(net_mig_c, na.rm = TRUE),
+    net_mig_c_m = mean(net_mig_c, na.rm = TRUE)
   ) %>%
   ungroup()
 
