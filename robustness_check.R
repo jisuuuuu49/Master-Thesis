@@ -1,7 +1,6 @@
-# ---- Install & Load Necessary Packages ----
-install.packages(c("ordinal","mfp","htmltools","webshot","webshot2","insight","sandwich","lmtest","lme4", "tidyverse", "performance", "sjPlot", "insight", "splines", "clubSandwich"))
-library(webshot2)
-library(webshot)
+# ---------------------------
+# Load Required Packages
+# ---------------------------
 library(lme4)
 library(tidyverse)
 library(performance)
@@ -16,21 +15,26 @@ library(htmltools)
 library(mfp)
 library(ordinal)
 
-setwd("/Users/aunal/Desktop/Uni/Study/ss 2024/master thesis/data")
-df <- read_csv("ESS_EUROSTAT_final_standardized.csv") %>%
-  janitor::clean_names() %>%
-  filter(year != 9999) %>%
-  filter(gndr != 9) %>%
-  mutate(
-    year = as.factor(year),
-    gndr = as.factor(gndr),
-    immig_background = as.factor(immig_background),
-    #education_numeric = as.factor(education_numeric),
-    #have_child = as.factor(have_child)
-  )%>%
-  # Exclude countries or NUTS2 codes starting with "DE" or "UK"
-  filter(!grepl("^(DE|UK)", country), !grepl("^(DE|UK)", nuts2))
+# ---------------------------
+# Load & Prepare Data
+# ---------------------------
+# set your working directory and read your file.
+df <- read_csv("your file.csv") %>% clean_names()
+#setwd("/Users/aunal/Desktop/Uni/Study/ss 2024/master thesis/data")
+#df <- read_csv("ESS_EUROSTAT_final_standardized.csv") %>%
+#  janitor::clean_names() %>%
+#  filter(year != 9999) %>%
+#  filter(gndr != 9) %>%
+#  mutate(
+#    year = as.factor(year),
+#    gndr = as.factor(gndr)
+#  )%>%
+#  # Exclude countries or NUTS2 codes starting with "DE" or "UK"
+#  filter(!grepl("^(DE|UK)", country), !grepl("^(DE|UK)", nuts2))
 
+# ---------------------------
+# Create Economic Threat Index (Reverse-Coded)
+# ---------------------------
 df <- df %>%
   mutate(
     economic_threat_index = rowMeans(as.matrix(.[, c("immigration_economy", "perceived_economic_competition", "jobs_taken")]), na.rm = TRUE)
@@ -42,6 +46,10 @@ df <- df %>%
   mutate(
     economic_threat_index = 1 - economic_threat_index  # reverse code: higher = higher threat
   )
+
+# ---------------------------
+# Decompose Predictors: Within- and Between-Group Centering
+# ---------------------------
 df <- df %>%
   group_by(nuts2) %>%
   mutate(
@@ -68,110 +76,70 @@ df <- df %>%
   
   group_by(country) %>%
   mutate(
-    pop_density_c_dm = pop_density - mean(pop_density, na.rm = TRUE),
-    pop_density_c_m = mean(pop_density, na.rm = TRUE),
-    unemployment_c_dm = unemployment - mean(unemployment, na.rm = TRUE),
-    unemployment_c_m = mean(unemployment, na.rm = TRUE),
-    gdppc_c_dm = gdppc - mean(gdppc, na.rm = TRUE),
-    gdppc_c_m = mean(gdppc, na.rm = TRUE),
-    net_mig_c_dm = minority_presence - mean(net_mig, na.rm = TRUE),
-    net_mig_c_m = mean(net_mig, na.rm = TRUE)
+    unemployment_c_dm = unemployment_c - mean(unemployment_c, na.rm = TRUE),
+    unemployment_c_m = mean(unemployment_c, na.rm = TRUE),
+    gdppc_c_dm = gdppc_c - mean(gdppc_c, na.rm = TRUE),
+    gdppc_c_m = mean(gdppc_c, na.rm = TRUE),
+    net_mig_c_dm = net_mig_c - mean(net_mig_c, na.rm = TRUE),
+    net_mig_c_m = mean(net_mig_c, na.rm = TRUE)
   ) %>%
   ungroup()
 
 
-df_sample <- df_sample %>%
-  mutate(
-    social_contact_fp = cut(social_contact_dm, breaks = quantile(social_contact_dm, probs = seq(0, 1, 0.1), na.rm = TRUE), labels = FALSE, include.lowest = TRUE),
-    economic_threat_fp = cut(economic_threat_index_dm, breaks = quantile(economic_threat_index_dm, probs = seq(0, 1, 0.1), na.rm = TRUE), labels = FALSE, include.lowest = TRUE)
-  )
-df_sample <- df_sample %>%
-  mutate(
-    social_contact_fp = cut(social_contact_dm, 
-                            breaks = unique(quantile(social_contact_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                            labels = FALSE, include.lowest = TRUE),
-    
-    economic_threat_fp = cut(economic_threat_index_dm, 
-                             breaks = unique(quantile(economic_threat_index_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                             labels = FALSE, include.lowest = TRUE),
-    
-    pop_density_fp = cut(pop_density_dm, 
-                         breaks = unique(quantile(pop_density_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                         labels = FALSE, include.lowest = TRUE),
-    
-    unemployment_fp = cut(unemployment_dm, 
-                          breaks = unique(quantile(unemployment_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                          labels = FALSE, include.lowest = TRUE),
-    
-    gdppc_fp = cut(gdppc_dm, 
-                   breaks = unique(quantile(gdppc_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                   labels = FALSE, include.lowest = TRUE),
-    
-    net_mig_fp = cut(net_mig_dm, 
-                     breaks = unique(quantile(net_mig_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                     labels = FALSE, include.lowest = TRUE),
-    
-    unemployment_c_fp = cut(unemployment_c_dm, 
-                            breaks = unique(quantile(unemployment_c_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                            labels = FALSE, include.lowest = TRUE),
-    
-    gdppc_c_fp = cut(gdppc_c_dm, 
-                     breaks = unique(quantile(gdppc_c_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                     labels = FALSE, include.lowest = TRUE),
-    
-    minority_presence_fp = cut(minority_presence_dm, 
-                               breaks = unique(quantile(minority_presence_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                               labels = FALSE, include.lowest = TRUE),
-    
-    lrscale_fp = cut(lrscale_dm, 
-                     breaks = unique(quantile(lrscale_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                     labels = FALSE, include.lowest = TRUE),
-    
-    education_numeric_fp = cut(as.numeric(education_numeric), 
-                               breaks = unique(quantile(as.numeric(education_numeric), probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                               labels = FALSE, include.lowest = TRUE),
-    
-    household_income_fp = cut(household_income_dm, 
-                              breaks = unique(quantile(household_income_dm, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                              labels = FALSE, include.lowest = TRUE),
-    
-    age_fp = cut(age, 
-                 breaks = unique(quantile(age, probs = seq(0, 1, 0.1), na.rm = TRUE)), 
-                 labels = FALSE, include.lowest = TRUE)
-  )
-
-
-fp_model <- mfp(imwbcnt ~ fp(social_contact_fp, df = 2) + fp(economic_threat_fp, df = 2) +
-                  lrscale_dm + age + gndr + year_numeric,
+fp_model <- mfp(imwbcnt ~ fp(social_contact_dm, df = 2) + fp(economic_threat_dm, df = 3) +
+                  lrscale_dm + age + gndr + factor(year) + factor(country) + factor(nuts2),
                 family = gaussian, data = df_sample)
-fp_model <- mfp(imwbcnt ~ 
-                  fp(social_contact_dm) + #fp(social_contact_dm) + 
-                  economic_threat_index_dm +
-                  pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
-                  unemployment_c_dm + gdppc_c_dm +
-                  social_contact_m +
-                  minority_presence_dm + minority_presence_m +
-                  economic_threat_index_m +
-                  lrscale_dm + lrscale_m +
-                  education_numeric + household_income_dm + age + gndr +
-                  year_numeric, #+ factor(country),  # Replacing factor(year) with numeric form
-                family = gaussian, data = df_sample)
-summary(fp_model)
-fp_model <- mfp(imwbcnt ~ fp(social_contact_fp, df = 2) + fp(economic_threat_fp, df = 2) +
-                                    lrscale_dm + age + gndr + year_numeric,
-                                family = gaussian, data = df_sample)
-fp_model <- mfp(imwbcnt ~ fp(social_contact_dm, df = 2) + 
-                  fp(economic_threat_index_dm, df = 2) +
-                  pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
-                  unemployment_c_dm + gdppc_c_dm +
-                  minority_presence_dm + 
-                  lrscale_dm + age + gndr + education_numeric + factor(year) + factor(nuts2),
-                family = gaussian, data = df)
 
+# Fit GLM with continuous and categorical predictors
+fp_model_mfp <- mfp(imwbcnt ~ 
+                      fp(economic_threat_index_dm) + 
+                      fp(social_contact_dm) + 
+                      fp(gdppc_c_dm) + 
+                      fp(lrscale_dm) + 
+                      education_numeric + 
+                      fp(net_mig_dm) + 
+                      fp(unemployment_c_dm) + 
+                      fp(gdppc_dm) + 
+                      fp(age) + 
+                      fp(unemployment_dm) + 
+                      gndr + 
+                      fp(pop_density_dm) + 
+                      fp(minority_presence_dm), 
+                    family = gaussian, 
+                    data = df)
 
-summary(fp_model)
-tab_model(fp_model)
+summary(fp_model_mfp)
+fp_model_glm <- glm(imwbcnt ~ 
+                      I((economic_threat_index_dm + 0.6)^3) +  
+                      I((social_contact_dm + 1)^2) + 
+                      gdppc_c_dm +  
+                      lrscale_dm + 
+                      education_numeric + 
+                      net_mig_dm +  
+                      unemployment_c_dm + 
+                      gdppc_dm + 
+                      age +  household_income_dm +
+                      unemployment_dm + 
+                      gndr + 
+                      pop_density_dm +  
+                      minority_presence_dm + 
+                      factor(year) + 
+                      factor(nuts2) + 
+                      factor(country), 
+                    family = gaussian, 
+                    data = df)
+
+tab_model(fp_model_glm)
 plot(fp_model)
+#fp_test <- mfp(imwbcnt ~ fp(social_contact_dm, df = 2) + 
+#                  fp(economic_threat_index_dm, df = 3) +
+#                  pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
+#                  unemployment_c_dm + gdppc_c_dm +
+#                  minority_presence_dm + 
+#                  lrscale_dm + age + gndr + education_numeric + factor(year) + factor(nuts2) + factor(country),
+#                family = gaussian, data = df)
+
+
 
 fp_summary <- summary(fp_model)
 
@@ -179,24 +147,9 @@ fp_results <- as.data.frame(fp_summary$coefficients)
 
 colnames(fp_results) <- c("Estimate", "Std. Error", "t value", "p-value")
 
-fp_model_glm <- glm(imwbcnt ~ I((economic_threat_index_dm + 0.6)^1) +  
-                      I((social_contact_dm + 1)^1) + gdppc_c_dm +  
-                      lrscale_dm + education_numeric + net_mig_dm +  
-                      unemployment_c_dm + gdppc_dm + age +  
-                      unemployment_dm + gndr + pop_density_dm +  
-                      minority_presence_dm, 
-                    family = gaussian, data = df_sample)
 
 tab_model(fp_model_glm)
 
-
-df <- df %>%
-  mutate(imwbcnt_ordinal = cut(imwbcnt, 
-                               breaks = seq(min(imwbcnt, na.rm = TRUE), max(imwbcnt, na.rm = TRUE), length.out = 11), 
-                               labels = FALSE, 
-                               include.lowest = TRUE))
-
-df$imwbcnt_ordinal <- factor(df$imwbcnt_ordinal, ordered = TRUE)
 
 
 ologit_model <- clm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
@@ -206,8 +159,9 @@ ologit_model <- clm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_
                  economic_threat_index_dm + economic_threat_index_m +
                  lrscale_dm + lrscale_m +
                  education_numeric + household_income_dm + age + gndr +
-                 factor(year) + factor(nuts2),
+                 factor(year) + factor(nuts2) + factor(country),
                data = df, na.action = na.exclude)
+
 clustered_se_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
                            unemployment_c_dm + gdppc_c_dm + 
                            social_contact_dm + social_contact_m +
@@ -215,7 +169,7 @@ clustered_se_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm +
                            economic_threat_index_dm + economic_threat_index_m +
                            lrscale_dm + lrscale_m +
                            education_numeric + household_income_dm + age + gndr +
-                           factor(year) + factor(nuts2),
+                           factor(year) + factor(nuts2) + factor(country),
                          data = df,na.action = na.exclude)
 
 clustered_se <- coeftest(clustered_se_model, vcov = vcovCL(clustered_se_model, cluster = ~nuts2))
@@ -232,7 +186,7 @@ native_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_m
                      economic_threat_index_dm + economic_threat_index_m +
                      lrscale_dm + lrscale_m +
                      education_numeric + household_income_dm + age + gndr +
-                     factor(year) + factor(nuts2),
+                     factor(year) + factor(nuts2) + factor(country),
                    data = df_native, na.action = na.exclude)
 
 immigrant_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
@@ -242,10 +196,10 @@ immigrant_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + ne
                         economic_threat_index_dm + economic_threat_index_m +
                         lrscale_dm + lrscale_m +
                         education_numeric + household_income_dm + age + gndr +
-                        factor(year) + factor(nuts2),
+                        factor(year) + factor(nuts2) + factor(country),
                       data = df_immigrants, na.action = na.exclude)
 
-df_excl <- df %>% filter(country != "FR")  # Example exclusion (France & Italy)
+df_excl <- df %>% filter(country != "FR")  
 excl_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
                    unemployment_c_dm + gdppc_c_dm + 
                    social_contact_dm + social_contact_m +
@@ -253,7 +207,7 @@ excl_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig
                    economic_threat_index_dm + economic_threat_index_m +
                    lrscale_dm + lrscale_m +
                    education_numeric + household_income_dm + age + gndr +
-                   factor(year) + factor(nuts2),
+                   factor(year) + factor(nuts2) + factor(country),
                  data = df_excl,na.action = na.exclude)
 df_excl_more <- df %>% filter(country != "AT" & country !="FR") 
 excl_more_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
@@ -263,7 +217,7 @@ excl_more_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + ne
                         economic_threat_index_dm + economic_threat_index_m +
                         lrscale_dm + lrscale_m +
                         education_numeric + household_income_dm + age + gndr +
-                        factor(year) + factor(nuts2),
+                        factor(year) + factor(nuts2) + factor(country),
                  data = df_excl_more,na.action = na.exclude)
 
 df_no2015 <- df %>% filter(year != "2015")
@@ -274,7 +228,7 @@ no2015_model <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_m
                      economic_threat_index_dm + economic_threat_index_m +
                      lrscale_dm + lrscale_m +
                      education_numeric + household_income_dm + age + gndr +
-                     factor(year) + factor(nuts2),
+                     factor(year) + factor(nuts2) + factor(country),
                    data = df_no2015)
 
 tab_model(fp_model_glm,  clustered_se_model, ologit_model,native_model, immigrant_model, excl_model,excl_more_model, no2015_model,
@@ -336,18 +290,20 @@ tab_model(fp_model_glm,  clustered_se_model, ologit_model,native_model, immigran
           string.p    = "p-value",  
           
           # Exclude certain terms
-          rm.terms = c("factor\\(\\s*nuts2\\s*\\).*"),  
+          #rm.terms = c("factor\\(\\s*nuts2\\s*\\).*","factor\\(\\s*country\\s*\\).*"),  
           
           # Save the table to an HTML file
           file = "robustness_checks.html"
 )
-fp_model_glm_fixed <- glm(imwbcnt ~ poly(social_contact_dm, 2) + 
-                            poly(economic_threat_index_dm, 2) + 
-                            lrscale_dm + age + gndr + factor(year),
-                          data = df, family = gaussian)
+
+#fp_model_glm_fixed <- glm(imwbcnt ~ 
+#                            poly(social_contact_dm, 2) + 
+#                            poly(economic_threat_index_dm, 3) + 
+#                            lrscale_dm + age + gndr + factor(year) + factor(country) + factor(nuts2),
+#                          data = df, family = gaussian)
 
 fp_model_glm_fixed <- glm(imwbcnt ~ poly(social_contact_dm, 2) + 
-                            poly(economic_threat_index_dm, 2) + 
+                            poly(economic_threat_index_dm, 3) + 
                             pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
                             unemployment_c_dm + gdppc_c_dm + 
                              social_contact_m +
@@ -355,8 +311,9 @@ fp_model_glm_fixed <- glm(imwbcnt ~ poly(social_contact_dm, 2) +
                             economic_threat_index_m +
                             lrscale_dm + lrscale_m +
                             education_numeric + household_income_dm + age + gndr +
-                            factor(year) + factor(nuts2),
+                            factor(year) + factor(nuts2) + factor(country),
                           data = df, family = gaussian)
+
 tab_model(fp_model_glm_fixed, clustered_se_model, ologit_model, 
           native_model, immigrant_model, excl_model, excl_more_model, 
           no2015_model,
