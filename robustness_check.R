@@ -276,7 +276,6 @@ tab_model(fp_model_glm,  clustered_se_model, ologit_model,native_model, immigran
             "net_mig_dm"      = "Crude Net Migration Rate (regional-level WE)",
             "net_mig_m"       = "Crude Net Migration Rate (regional-level BE)",
             
-            # If you have country-level decomposition (pop_density_c_dm, etc.), you can also rename:
             "unemployment_c_dm"= "Unemployment Rate (Country-level WE)",
             "unemployment_c_m" = "Unemployment Rate (Country-level BE)",
             "gdppc_c_dm"       = "GDP per Capita (Country-level WE)",
