@@ -1,7 +1,3 @@
-# ---- Install & Load Necessary Packages ----
-install.packages(c("broom","htmltools","webshot","webshot2","insight","sandwich","lmtest","lme4", "tidyverse", "performance", "sjPlot", "insight", "splines", "clubSandwich"))
-library(webshot2)
-library(webshot)
 library(lme4)
 library(tidyverse)
 library(performance)
@@ -11,39 +7,35 @@ library(splines)
 library(clubSandwich)
 library(sandwich)
 library(lmtest)
-library(insight)
 library(htmltools)
 library(broom)
-# ---- Set Working Directory ----
-setwd("/Users/aunal/Desktop/Uni/Study/ss 2024/master thesis/data")
 
-# ---- Load & Clean Data ----
-df <- read_csv("ESS_EUROSTAT_final_standardized.csv") %>%
-  janitor::clean_names() %>%
-  filter(year != 9999) %>%
-  filter(gndr != 9) %>%
-  mutate(
-    year = as.factor(year),
-    gndr = as.factor(gndr),
-    immig_background = as.factor(immig_background),
-    education_numeric = as.factor(education_numeric),
-    have_child = as.factor(have_child)
-  )%>%
-  # Exclude countries or NUTS2 codes starting with "DE" or "UK"
-  filter(!grepl("^(DE|UK)", country), !grepl("^(DE|UK)", nuts2))
+# set your repository.
+#setwd("/Users/aunal/Desktop/Uni/Study/ss 2024/master thesis/data")
 
-# ---- Create Economic Threat Index ----
-df <- df %>%
-  mutate(
-    economic_threat_index = rowMeans(as.matrix(.[, c("immigration_economy", "perceived_economic_competition", "jobs_taken")]), na.rm = TRUE)
-  ) %>%
-  mutate(
-    economic_threat_index = (economic_threat_index - min(economic_threat_index, na.rm = TRUE)) /
-      (max(economic_threat_index, na.rm = TRUE) - min(economic_threat_index, na.rm = TRUE))
-  ) %>%
-  mutate(
-    economic_threat_index = 1 - economic_threat_index  # reverse code: higher = higher threat
-  )
+#df <- read_csv("ESS_EUROSTAT_final_standardized.csv") %>%
+#  janitor::clean_names() %>%
+#  filter(year != 9999) %>%
+#  filter(gndr != 9) %>%
+#  mutate(
+#    year = as.factor(year),
+#    gndr = as.factor(gndr),
+#    immig_background = as.factor(immig_background),
+#    education_numeric = as.factor(education_numeric),
+#    have_child = as.factor(have_child)
+#  ) %>%
+#  filter(!grepl("^(DE|UK)", country), !grepl("^(DE|UK)", nuts2))
+
+
+#df <- df %>%
+#  mutate(
+#    economic_threat_index = rowMeans(as.matrix(.[, c("immigration_economy", "perceived_economic_competition", "jobs_taken")]), na.rm = TRUE),
+#    economic_threat_index = (economic_threat_index - min(economic_threat_index, na.rm = TRUE)) /
+#      (max(economic_threat_index, na.rm = TRUE) - min(economic_threat_index, na.rm = TRUE)),
+#    economic_threat_index = 1 - economic_threat_index
+#  )
+
+df <- read_csv("your file.csv") %>% clean_names()
 df <- df %>%
   group_by(nuts2) %>%
   mutate(
@@ -67,12 +59,9 @@ df <- df %>%
     net_mig_m = mean(net_mig, na.rm = TRUE)
   ) %>%
   ungroup() %>%
-  
-  # ✅ Decomposing Regional-Level Predictors at the Country Level
+
   group_by(country) %>%
   mutate(
-    pop_density_c_dm = pop_density - mean(pop_density, na.rm = TRUE),
-    pop_density_c_m = mean(pop_density, na.rm = TRUE),
     unemployment_c_dm = unemployment - mean(unemployment, na.rm = TRUE),
     unemployment_c_m = mean(unemployment, na.rm = TRUE),
     gdppc_c_dm = gdppc - mean(gdppc, na.rm = TRUE),
@@ -82,33 +71,28 @@ df <- df %>%
   ) %>%
   ungroup()
 
-colnames(df)
-# ---- Fit Null Model (Variance Decomposition) ----
-m0 <- lmer(imwbcnt ~ 1 + (1|nuts2) + (1 | country/year), data = df) #+ (1 | nuts2) + year
+m0 <- lmer(imwbcnt ~ 1 + (1|nuts2) + (1 | country/year), data = df)
 
-# ---- Variance Decomposition ----
-var_ind <- insight::get_variance_residual(m0)  # Individual variance
-var_nuts2 <- insight::get_variance_intercept(m0)[1]  # Between-region variance
-var_year <- insight::get_variance_intercept(m0)[2]  # Between-year variance
-var_country <- insight::get_variance_intercept(m0)[3]  # Between-country variance
+var_ind <- insight::get_variance_residual(m0)
+var_nuts2 <- insight::get_variance_intercept(m0)[1]
+var_year <- insight::get_variance_intercept(m0)[2]
+var_country <- insight::get_variance_intercept(m0)[3]
 
-# ---- Share of Variance at Each Level ----
 var_nuts2_share <- var_nuts2 / (var_ind + var_nuts2 + var_year + var_country)
 var_year_share <- var_year / (var_ind + var_nuts2 + var_year + var_country)
 var_country_share <- var_country / (var_ind + var_nuts2 + var_year + var_country)
 var_ind_share <- var_ind / (var_ind + var_nuts2 + var_year + var_country)
 
-# ---- Print Variance Decomposition Results ----
-cat("\nVariance Decomposition Results:\n")
 cat("Variance within individuals:", round(var_ind, 4), "\n")
 cat("Variance between NUTS2 regions:", round(var_nuts2, 4), "\n")
 cat("Variance between years:", round(var_year, 4), "\n")
-cat("Variance between countries:", round(var_country, 4), "\n\n")
-
+cat("Variance between countries:", round(var_country, 4), "\n")
 cat("Share of variance between NUTS2 regions:", round(var_nuts2_share, 4), "\n")
 cat("Share of variance between years:", round(var_year_share, 4), "\n")
 cat("Share of variance between countries:", round(var_country_share, 4), "\n")
 cat("Share of variance within individuals:", round(var_ind_share, 4), "\n")
+
+
 
 # ---- Fit Macro-Level Model (Only Regional & National Factors) ----
 m1_region <- lmer(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
@@ -221,16 +205,6 @@ tab_model(
 
 
 
-webshot::install_phantomjs()
-html_file <- "multilevel_predictors.html"
-html_content <- readLines(html_file)
-css_to_add <- "<style>body {background-color: white !important;}</style>"
-html_content_modified <- sub("(<head>)", paste0("\\1\n", css_to_add), html_content)
-new_html_file <- "multilevel_predictors_white.html"
-writeLines(html_content_modified, new_html_file)
-webshot(new_html_file, file = "multilevel_predictors_white.png", delay = 0.5)
-
-
 
 var_ind <- insight::get_variance_residual(m0)  # Individual-level variance
 var_nuts2 <- insight::get_variance_intercept(m0)[1]  # Between-region variance
@@ -251,7 +225,7 @@ cat("ICC (country):", round(var_country / total_var, 4), "\n")
 
 
 # ---- Fixed Effects OLS Model ----
-m0 <- lm(imwbcnt ~ factor(year),  + factor(country) + factor(nuts2),
+m0 <- lm(imwbcnt ~ factor(year)  + factor(country) + factor(nuts2),
          data = df, na.action = na.exclude)
 summary(m0)
 
@@ -280,18 +254,6 @@ m2_full <- lm(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm
               data = df, na.action = na.exclude)
 summary(m2_full)
 
-
-remove_nuts2_country_terms <- function(model) {
-  mod_sum <- summary(model)
-  coef_names <- rownames(mod_sum$coefficients)
-  keep_terms <- !grepl("nuts2|country", coef_names)
-  mod_sum$coefficients <- mod_sum$coefficients[keep_terms, , drop = FALSE]
-  return(mod_sum)
-}
-m0_fe_clean <- remove_nuts2_country_terms(m0)
-m1_region_clean <- remove_nuts2_country_terms(m1_region)
-m1_macro_clean <- remove_nuts2_country_terms(m1_macro)
-m2_full_clean <- remove_nuts2_country_terms(m2_full)
 
 rename_coef_names <- function(model, renames) {
   coefs <- tidy(model)
@@ -374,15 +336,4 @@ tab_model(
   show.reflvl = FALSE
   #file = "ols_fixed_effects_models.html"
 )
-
-
-
-
-
-
-
-
-
-
-
 
