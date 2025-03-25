@@ -1,3 +1,6 @@
+# ===========================
+# Load Required Libraries
+# ===========================
 library(lme4)
 library(tidyverse)
 library(performance)
@@ -10,9 +13,11 @@ library(lmtest)
 library(htmltools)
 library(broom)
 
-# set your working directory and load your data.
+# ===========================
+# Load and Prepare Data
+# ===========================
+# Replace 'your file.csv' with your actual file name
 #setwd("/Users/aunal/Desktop/Uni/Study/ss 2024/master thesis/data")
-
 #df <- read_csv("ESS_EUROSTAT_final_standardized.csv") %>%
 #  janitor::clean_names() %>%
 #  filter(year != 9999) %>%
@@ -35,6 +40,7 @@ library(broom)
 #    economic_threat_index = 1 - economic_threat_index
 #  )
 
+# Decompose variables into within and between components
 df <- read_csv("your file.csv") %>% clean_names()
 df <- df %>%
   group_by(nuts2) %>%
@@ -93,7 +99,9 @@ cat("Share of variance between countries:", round(var_country_share, 4), "\n")
 cat("Share of variance within individuals:", round(var_ind_share, 4), "\n")
 
 
-
+# ===========================
+# Multilevel Models
+# ===========================
 # ---- Fit Macro-Level Model (Only Regional & National Factors) ----
 m1_region <- lmer(imwbcnt ~ pop_density_dm + unemployment_dm + gdppc_dm + net_mig_dm +
                    pop_density_m + unemployment_m + gdppc_m + net_mig_m + year +
@@ -131,28 +139,15 @@ summary(m2_full)
 
 tab_model(
   m0, m1_region, m1_macro, m2_full,
-  
-  # 1) Label the columns (the DV labels) 
   dv.labels = c("M0", "M1", "M2", "M3"),
-  
-  # 2) Title of the table
   title = "Table 2: Multilevel Predictors of Outgroup Hostility",
-  
-  # 3) Collapse the standard errors in parentheses
   collapse.se = TRUE,
-  
-  # 4) We do not show Confidence Intervals, but do show AIC, ICC
   show.ci = FALSE,
   show.aic = TRUE,
   show.icc = TRUE,
-  
-  # 5) Significance thresholds
   p.threshold = c(0.05, 0.01, 0.001),
-  # 6) Provide custom labels for each predictor
   pred.labels = c(
     "(Intercept)" = "Intercept",
-    
-    #  Micro-level variables
     "social_contact_dm"          = "Social Contact (WE)",
     "social_contact_m"           = "Social Contact (BE)",
     "minority_presence_dm"       = "Minority Presence (WE)",
@@ -163,8 +158,6 @@ tab_model(
     "lrscale_m"                  = "Political Ideology (BE)",
     "household_income_dm"        = "Household Income (WE)",
     "household_income_m"         = "Household Income (BE)",
-    
-    #  Categorical variables
     "education_numeric3" = "Education (ISCED3) [ref=ISCED2]",
     "education_numeric4" = "Education (ISCED4)",
     "education_numeric5" = "Education (ISCED5+)",
@@ -174,8 +167,6 @@ tab_model(
     "year2014" = "Year (2014)",
     "year2015" = "Year (2015)",
     
-    
-    #  Within (WE) and Between (BE) examples
     "pop_density_dm" = "Population Density (regional-level WE)",
     "pop_density_m"  = "Population Density (regional-level BE)",
     "unemployment_dm" = "Unemployment Rate (regional-level WE)",
@@ -184,8 +175,6 @@ tab_model(
     "gdppc_m"         = "GDP per Capita (regional-level BE)",
     "net_mig_dm"      = "Crude Net Migration Rate (regional-level WE)",
     "net_mig_m"       = "Crude Net Migration Rate (regional-level BE)",
-    
-    # If you have country-level decomposition (pop_density_c_dm, etc.), you can also rename:
     "unemployment_c_dm"= "Unemployment Rate (Country-level WE)",
     "unemployment_c_m" = "Unemployment Rate (Country-level BE)",
     "gdppc_c_dm"       = "GDP per Capita (Country-level WE)",
@@ -193,12 +182,10 @@ tab_model(
     
   ),
   
-  # 7) Additional labeling arguments
   string.pred = "Predictors",        # Column label for the predictor names
   string.est  = "Est. (SE)",         # Column label for the estimates
   string.p    = "p-value",
   
-  # 8) Show reference levels automatically above the factor if you want
   show.reflvl = TRUE,
   file = "multilevel_predictors.html"
 )
@@ -224,8 +211,10 @@ cat("ICC (country):", round(var_country / total_var, 4), "\n")
 
 
 
-# ---- Fixed Effects OLS Model ----
-m0 <- lm(imwbcnt ~ factor(year)  + factor(country) + factor(nuts2),
+# ===========================
+# Fixed Effects Models
+# ===========================
+m0_lm <- lm(imwbcnt ~ factor(year)  + factor(country) + factor(nuts2),
          data = df, na.action = na.exclude)
 summary(m0)
 
@@ -266,7 +255,7 @@ year_names <- c("factor(year)2003" = "year(2003)",
                 "factor(year)2014" = "Year(2014)",
                 "factor(year)2015" = "Year(2015)")
 
-m0_coefs <- rename_coef_names(m0_fe_clean, year_names)
+m0_coefs <- rename_coef_names(m0_lm, year_names)
 m1_region_coefs <- rename_coef_names(m1_region_clean, year_names)
 m1_macro_coefs <- rename_coef_names(m1_macro_clean, year_names)
 m2_full_coefs <- rename_coef_names(m2_full_clean, year_names)
@@ -276,6 +265,10 @@ names(coef(m0_fe_clean))
 bic_values <- c(
   BIC(m0),BIC(m1_region),BIC(m1_macro),BIC(m2_full))
 print(bic_values)
+
+# ===========================
+# Table of Models (Mixed & OLS)
+# ===========================
 tab_model(
   m0, m1_region, m1_macro, m2_full, #m0_fe_clean, m1_region_clean, m1_macro_clean, m2_full_clean,
   dv.labels = c("M0", "M1",
