@@ -69,7 +69,7 @@ df <- df %>%
     unemployment_m = mean(unemployment, na.rm = TRUE),
     gdppc_dm = gdppc - mean(gdppc, na.rm = TRUE),
     gdppc_m = mean(gdppc, na.rm = TRUE),
-    net_mig_dm = minority_presence - mean(net_mig, na.rm = TRUE),
+    net_mig_dm = net_mig - mean(net_mig, na.rm = TRUE),
     net_mig_m = mean(net_mig, na.rm = TRUE)
   ) %>%
   ungroup() %>%
@@ -88,7 +88,7 @@ df <- df %>%
 
 fp_model <- mfp(imwbcnt ~ fp(social_contact_dm, df = 2) + fp(economic_threat_dm, df = 3) +
                   lrscale_dm + age + gndr + factor(year) + factor(country) + factor(nuts2),
-                family = gaussian, data = df_sample)
+                family = gaussian, data = df)
 
 # Fit GLM with continuous and categorical predictors
 fp_model_mfp <- mfp(imwbcnt ~ 
@@ -368,7 +368,7 @@ tab_model(fp_model_glm_fixed, clustered_se_model, ologit_model,
           string.pred = "",
           
           # Hide the Intercept row
-          rm.terms = c("factor\\(\\s*nuts2\\s*\\).*", "(Intercept)","term","Predictors"),
+          #rm.terms = c("factor\\(\\s*nuts2\\s*\\).*", "(Intercept)","term","Predictors"),
           
           # Save to file
           file = "robustness_checks_02.html"
