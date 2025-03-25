@@ -26,7 +26,7 @@ This thesis addresses the following research questions:
 3. How do regional and national migration levels moderate the relationship between social contact and hostility toward outgroups?
 
 ## 2.1 Theoretical Frameworks
-This study is theoretically grounded in Intergroup Contact Theory (Allport, 1954) and Group Threat Theory (Blalock, 1967). While contact theory posits that interpersonal interaction with outgroups reduces prejudice, threat theory suggests that such interaction—particularly under perceived competition—may intensify hostility. These theories motivate the interaction terms and non-linear modeling strategies employed throughout this project.
+This study is theoretically grounded in Intergroup Contact Theory (Allport, 1954) and Group Threat Theory (Blalock, 1967). While contact theory posits that interpersonal interaction with outgroups reduces prejudice, threat theory suggests that such interaction, particularly under perceived competition, may intensify hostility. These theories motivate the interaction terms and non-linear modeling strategies employed throughout this project.
 
 
 ---
