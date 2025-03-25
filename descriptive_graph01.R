@@ -53,6 +53,7 @@ df <- read_csv("your file.csv") %>% clean_names()
 # ---------------------------
 # Count Observations per Region per Year
 # ---------------------------
+# you can put your own df here instead of df_aggregated
 nuts2_years <- df_aggregated %>%
   group_by(nuts2, year) %>%
   summarise(n = sum(N), .groups = "drop")
