@@ -67,7 +67,7 @@ df <- df %>%
     unemployment_m = mean(unemployment, na.rm = TRUE),
     gdppc_dm = gdppc - mean(gdppc, na.rm = TRUE),
     gdppc_m = mean(gdppc, na.rm = TRUE),
-    net_mig_dm = minority_presence - mean(net_mig, na.rm = TRUE),
+    net_mig_dm = met_mig - mean(net_mig, na.rm = TRUE),
     net_mig_m = mean(net_mig, na.rm = TRUE)
   ) %>%
   ungroup()
@@ -91,7 +91,6 @@ model_spline <- lm(
     age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df, na.action = na.exclude
 )
-
 
 # ----------------------------------
 # Generate Marginal Effect Plots
@@ -120,45 +119,44 @@ plot_social_contact <- ggplot(pred_social_contact, aes(x = x, y = predicted)) +
 # ----------------------------------
 # Interaction Effects (Splines Applied)
 # ----------------------------------
-
 # Interaction: Social Contact x Economic Threat
-pred_interaction1 <- ggpredict(model_spline, terms = c("social_contact_dm", "economic_threat_index_dm [0.2, 0.5, 0.8]"))
-plot_interaction1 <- ggplot(pred_interaction1, aes(x = x, y = predicted, color = group)) +
-  geom_line(size = 1.2) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
-  labs(title = "Interaction: Social Contact x Economic Threat",
-       x = "Social Contact",
-       y = "Predicted Outgroup Hostility",
-       color = "Economic Threat Level") +
-  theme_minimal()
+#pred_interaction1 <- ggpredict(model_spline, terms = c("social_contact_dm", "economic_threat_index_dm [0.2, 0.5, 0.8]"))
+#plot_interaction1 <- ggplot(pred_interaction1, aes(x = x, y = predicted, color = group)) +
+#  geom_line(size = 1.2) +
+#  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
+#  labs(title = "Interaction: Social Contact x Economic Threat",
+#       x = "Social Contact",
+#       y = "Predicted Outgroup Hostility",
+#       color = "Economic Threat Level") +
+#  theme_minimal()
 
 # Interaction: Social Contact x Political Ideology
-pred_interaction2 <- ggpredict(model_spline, terms = c("social_contact_dm", "lrscale_dm [0.2, 0.5, 0.8]"))
-plot_interaction2 <- ggplot(pred_interaction2, aes(x = x, y = predicted, color = group)) +
-  geom_line(size = 1.2) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
-  labs(title = "Interaction: Net Migration x Social Contact",
-       x = "Social Contact",
-       y = "Predicted Outgroup Hostility",
-       color = "Political Ideology Level") +
-  theme_minimal()
+#pred_interaction2 <- ggpredict(model_spline, terms = c("social_contact_dm", "lrscale_dm [0.2, 0.5, 0.8]"))
+#plot_interaction2 <- ggplot(pred_interaction2, aes(x = x, y = predicted, color = group)) +
+#  geom_line(size = 1.2) +
+#  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
+#  labs(title = "Interaction: Net Migration x Social Contact",
+#       x = "Social Contact",
+#       y = "Predicted Outgroup Hostility",
+#       color = "Political Ideology Level") +
+#  theme_minimal()
 
 # Interaction: Social Contact x Minority Presence
-pred_interaction3 <- ggpredict(model_spline, terms = c("social_contact_dm", "minority_presence_dm [0.2, 0.5, 0.8]"))
-plot_interaction3 <- ggplot(pred_interaction3, aes(x = x, y = predicted, color = group)) +
-  geom_line(size = 1.2) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
-  labs(title = "Interaction: Net Migration x Economic Threat",
-       x = "Social Contact",
-       y = "Predicted Outgroup Hostility",
-       color = "Minority Presence Level") +
-  theme_minimal()
+#pred_interaction3 <- ggpredict(model_spline, terms = c("social_contact_dm", "minority_presence_dm [0.2, 0.5, 0.8]"))
+#plot_interaction3 <- ggplot(pred_interaction3, aes(x = x, y = predicted, color = group)) +
+#  geom_line(size = 1.2) +
+#  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = 0.2, color = NA) +
+#  labs(title = "Interaction: Net Migration x Economic Threat",
+#       x = "Social Contact",
+#       y = "Predicted Outgroup Hostility",
+#       color = "Minority Presence Level") +
+#  theme_minimal()
 
-print(plot_social_contact)
-print(plot_net_migration)
-print(plot_interaction1)
-print(plot_interaction2)
-print(plot_interaction3)
+#print(plot_social_contact)
+#print(plot_net_migration)
+#print(plot_interaction1)
+#print(plot_interaction2)
+#print(plot_interaction3)
 
 
 seg_mod_combined <- segmented(
@@ -172,7 +170,7 @@ summary(seg_mod_combined)
 typical_threat <- mean(df$economic_threat_index_dm, na.rm = TRUE)
 typical_lr     <- mean(df$lrscale_dm, na.rm = TRUE)
 typical_age    <- mean(df$age, na.rm = TRUE)
-typical_gndr   <- "1"   
+typical_gndr   <- levels(df$gndr)[1]   
 
 grid_data <- data.frame(
   social_contact_dm = seq(
@@ -191,7 +189,7 @@ grid_data$fit <- pred_seg$fit
 grid_data$upr <- pred_seg$fit + 1.96 * pred_seg$se.fit
 grid_data$lwr <- pred_seg$fit - 1.96 * pred_seg$se.fit
 
-bp_value <- seg_mod_combined$psi[2]  # Extract breakpoint estimate
+bp_value <- seg_mod_combined$psi[2]  
 
 # Segmented Regression Plot
 plot_segmented <- ggplot(grid_data, aes(x = social_contact_dm, y = fit)) +
@@ -243,6 +241,7 @@ plot_pop_density <- plot_marginal_effect(model_pop_density, "pop_density", "Marg
 
 grid.arrange(plot_net_migration, plot_gdppc, plot_unemployment, plot_pop_density, nrow = 2)
 
+
 # Social Contact × Economic Threat
 model_social_econ <- lm(
   imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 3) +
@@ -258,27 +257,23 @@ model_social_ideo <- lm(
 )
 
 
-plot_interaction_effect<- function(model, term1, term2, title) {
-  pred <- ggpredict(model, terms = c(term1, paste0(term2, " [low, medium, high]")))
-  
-  ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
-    geom_line(size = 1.2) +  
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15) +  
-    scale_color_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
-    scale_fill_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
-    labs(title = title,
-         x = term1,
-         y = "Predicted Outgroup Hostility",
-         color = "Group",
-         fill = "Group") +
-    theme_minimal() +
-    theme(plot.title = element_text(size = 12),
-          legend.position = "right")  }
+#plot_interaction_effect<- function(model, term1, term2, title) {
+#  pred <- ggpredict(model, terms = c(term1, paste0(term2, " [low, medium, high]")))  
+#  ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
+#    geom_line(size = 1.2) +  
+#    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15) +  
+#    scale_color_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
+#    scale_fill_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
+#    labs(title = title,
+#         x = term1,
+#         y = "Predicted Outgroup Hostility",
+#         color = "Group",
+#         fill = "Group") +
+#    theme_minimal() +
+#    theme(plot.title = element_text(size = 12),
+#          legend.position = "right")  }
 
 
-
-x_limits <- c(-1, 0.5)  
-y_limits <- c(min(pred_minority$conf.low, na.rm = TRUE) - 0.1, max(pred_minority$conf.high, na.rm = TRUE) + 0.1)
 
 model_social_econ <- lm(
   imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 3) +
@@ -300,46 +295,47 @@ model_social_pop_den <- lm(
     age + gndr + factor(year) + factor(nuts2) + factor(country),
   data = df
 )
-# Function to plot interaction effects
-plot_interaction_effect_01 <- function(model, term1, term2, title, xlabel) {
+
+x_limits <- c(-1, 0.5)
+plot_interaction_effect <- function(model, term1, term2, title = "", xlabel = "X", ylabel = "Y") {
   pred <- ggpredict(model, terms = c(term1, paste0(term2, " [low, medium, high]")))
 
   ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
-    geom_line(size = 1.2) +  # Assign different colors to each group
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +  # Light confidence interval
-    scale_color_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  # Red, Blue, Green
-    scale_fill_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  # Match fill colors
-    labs(title = title,
-         x = xlabel,  # Custom X-axis label to remove "_dm"
-         y = "Predicted Outgroup Hostility",
-         color = "Group",
-         fill = "Group") +
-    theme_minimal() +
-    theme(plot.title = element_text(size = 12),
-          legend.position = "right")  # Keep legend for clarity
-}
-# Function to plot interaction effects with fixed y-axis limits
-plot_interaction_effect <- function(model, term1, term2, title, xlabel) {
-  pred <- ggpredict(model, terms = c(term1, paste0(term2, " [low, medium, high]")))
-  
-  ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
-    geom_line(size = 1.2) +  
-    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +  
+    geom_line(size = 1.2) +
+    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.15) +
     scale_color_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
     scale_fill_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
-    labs(title = title,
-         x = xlabel,  
-         y = "Predicted Outgroup Hostility",
-         color = "Group",
-         fill = "Group") +
+    labs(
+      title = title,
+      x = xlabel,
+      y = "Predicted Outgroup Hostility",
+      color = "Group",
+      fill = "Group"
+    ) +
     theme_minimal() +
     theme(plot.title = element_text(size = 12),
           legend.position = "right") +  
-    xlim(x_limits) +  # Set common x-axis limits
-    ylim(y_limits) 
+    xlim(x_limits)
 }
+#plot_interaction_effect <- function(model, term1, term2, title, xlabel) {
+#  pred <- ggpredict(model, terms = c(term1, paste0(term2, " [low, medium, high]")))  
+#  ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
+#    geom_line(size = 1.2) +  
+#    geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +  
+#    scale_color_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
+#    scale_fill_manual(values = c("#E41A1C", "#377EB8", "#4DAF4A")) +  
+#    labs(title = title,
+#         x = xlabel,  
+#         y = "Predicted Outgroup Hostility",
+#         color = "Group",
+#         fill = "Group") +
+#    theme_minimal() +
+#    theme(plot.title = element_text(size = 12),
+#          legend.position = "right") +  
+#    xlim(x_limits) 
+#}
 # Generate interaction plots with custom x-axis labels
-plot_social_econ <- plot_interaction_effect_01(
+plot_social_econ <- plot_interaction_effect(
   model_social_econ, "social_contact_dm", "economic_threat_index_dm",
   "Social Contact × Perceived Economic Threat", "Social Contact"
 )
