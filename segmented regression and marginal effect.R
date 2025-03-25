@@ -11,6 +11,7 @@ library(clubSandwich)
 library(sandwich)
 library(lmtest)
 library(segmented)
+library(gridExtra)
 
 # ---------------------------
 # Set Working Directory & Load Data
@@ -98,10 +99,10 @@ df <- df %>%
 lm_combined <- lm(imwbcnt ~ social_contact_dm + economic_threat_index_dm +
                     lrscale_dm + lrscale_m + education_numeric + household_income_dm +
                     gdppc_dm + pop_density_dm + unemployment_dm +
-                    gdppc_c_dm + pop_density_c_dm + unemployment_c_dm + net_mig_c_dm +
+                    gdppc_c_dm + pop_density_c_dm + unemployment_c_dm + 
                     age + gndr + factor(year) + factor(nuts2) + factor(country), data = df)
 
-base_linear_no_interaction <- lm(imwbcnt ~ social_contact_dm + economic_threat_index_dm + lrscale_dm + age + gndr, data = df)
+base_linear_no_interaction <- lm(imwbcnt ~ social_contact_dm + economic_threat_index_dm + lrscale_dm + education_numeric + household_income_dm +gdppc_dm + pop_density_dm + unemployment_dm + net_mig_dm + unemployment_c_dm + net_mig_c_dm + age + gndr + factor(year) + factor(country) + factor(nuts2), data = df)
 seg_mod_combined <- segmented(base_linear_no_interaction, seg.Z = ~ social_contact_dm, psi = 0.3)
 
 # ---------------------------
@@ -110,7 +111,7 @@ seg_mod_combined <- segmented(base_linear_no_interaction, seg.Z = ~ social_conta
 typical_threat <- mean(df$economic_threat_index_dm, na.rm = TRUE)
 typical_lr <- mean(df$lrscale_dm, na.rm = TRUE)
 typical_age <- mean(df$age, na.rm = TRUE)
-typical_gndr <- "1"
+typical_gndr <- levels(df$gndr)[1]
 
 grid_data <- data.frame(
   social_contact_dm = seq(min(df$social_contact_dm, na.rm = TRUE), max(df$social_contact_dm, na.rm = TRUE), length.out = 200),
@@ -138,7 +139,7 @@ plot_segmented <- ggplot(grid_data, aes(x = social_contact_dm, y = fit)) +
 # ---------------------------
 # Marginal Effect Plot
 # ---------------------------
-marginal_model <- lm(imwbcnt ~ social_contact_dm + economic_threat_index_dm + lrscale_dm + age + gndr + factor(year) + factor(nuts2), data = df)
+marginal_model <- lm(imwbcnt ~ social_contact_dm + economic_threat_index_dm + lrscale_dm + education_numeric + household_income_dm +gdppc_dm + pop_density_dm + unemployment_dm + net_mig_dm + unemployment_c_dm + net_mig_c_dm + age + gndr + factor(year) + factor(nuts2) + factor(country), data = df)
 pred_marginal <- ggpredict(marginal_model, terms = "social_contact_dm")
 
 plot_marginal <- ggplot(pred_marginal, aes(x = x, y = predicted)) +
@@ -171,11 +172,11 @@ ggplot(df, aes(x = social_contact_dm)) +
 # Compare Linear vs. Spline Interaction Models
 # ---------------------------
 model_linear <- lm(imwbcnt ~ social_contact_dm * economic_threat_index_dm + lrscale_dm + lrscale_m + education_numeric + household_income_dm +
-                     gdppc_dm + pop_density_dm + unemployment_dm + age + gndr +
+                     gdppc_dm + pop_density_dm + unemployment_dm + gdppc_c_dm + unemployment_c_dm + age + gndr +
                      factor(year) + factor(nuts2) + factor(country), data = df)
 
-model_spline <- lm(imwbcnt ~ ns(social_contact_dm, df = 3) * ns(economic_threat_index_dm, df = 3) + lrscale_dm + lrscale_m + education_numeric +
-                     household_income_dm + gdppc_dm + pop_density_dm + unemployment_dm + age + gndr +
+model_spline <- lm(imwbcnt ~ ns(social_contact_dm, df = 2) * ns(economic_threat_index_dm, df = 3) + lrscale_dm + lrscale_m + education_numeric +
+                     household_income_dm + gdppc_dm + pop_density_dm + unemployment_dm + gdppc_c_dm + unemployment_c_dm + age + gndr +
                      factor(year) + factor(nuts2) + factor(country), data = df)
 
 AIC(model_linear, model_spline)
